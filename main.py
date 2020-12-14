@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
-import statsmodels.api as sm
-from statsmodels.graphics import tsaplots
+from scipy.signal import find_peaks
+
 
 
 def Normalize(data, min, max):  # Chuẩn hóa data về 0,1
@@ -13,10 +13,10 @@ def Normalize(data, min, max):  # Chuẩn hóa data về 0,1
 
 
 def CalculateAC(data):
-    AC = np.zeros(len(data))
-    for i in range(0, len(data)):
-        for k in range(0, len(data) - i-1):
-            AC[i] += abs(data[k]-data[i+k])
+    AC = np.zeros(int(len(data)))
+    for i in range(0, int(len(data))):
+        for k in range(i, int(len(data) -1)):
+            AC[i] += data[k]*data[k-i]
     return AC
 
 
@@ -24,18 +24,63 @@ def CalculateAC(data):
 #     result = np.correlate(x, x, mode='full')
 #     return result[result.size/2:]
 
-def autocorr1(x):
-    r2=np.fft.ifft(np.abs(np.fft.fft(x))**2).real
-    return r2[:len(x)//2]
+# def autocorr1(x):
+#     r2=np.fft.ifft(np.abs(np.fft.fft(x))**2).real
+#     return r2[:len(x)//2]
 
+# def autocorr(x):
+#     result = np.correlate(x, x, mode='full')
+#     return result[result.size/2:]
 
 Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
 
 altdata = Normalize(data, min(data), max(data))
+# def autocorr2(x):
+#     r2=np.fft.ifft(np.abs(np.fft.fft(x))**2).real
+#     c=(r2/x.shape-np.mean(x)**2)/np.std(x)**2
 
-AC = autocorr1(data)
+#     return c[:len(x)//2]
 
-print(AC)
 
+
+def autocorr(data):
+    y = data - np.mean(data)
+    norm = np.sum(y ** 2)
+    correlated = np.correlate(y, y, mode='same')/norm
+    correlated = correlated[correlated.size //2:]
+    return correlated
+
+AC = autocorr(data)
+
+mark = []
+
+for i in range(0,len(AC)):
+    if AC[i] > 0.018:
+        mark.append(i)
+
+# mark.append(len(AC))
+sum = 0
+pitch = []
+for i in range(0,len(mark)):
+ if(i+1 < len(mark)):
+     if(mark[i+1] - mark[i] < 1000):
+        sum += (mark[i+1] - mark[i])/len(mark)
+        pitch.append(1/((mark[i + 1] - mark[i])/Fs))
+
+
+
+
+print(1/(sum/Fs))
+
+
+arrayX = []
+for i in range(0,len(pitch)):
+    arrayX.append(i)
+
+
+plt.subplot(2,1,1)
 plt.plot(AC)
+
+plt.subplot(2,1,2)
+plt.stem(pitch)
 plt.show()
