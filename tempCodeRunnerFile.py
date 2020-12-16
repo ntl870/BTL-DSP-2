@@ -1,2 +1,1 @@
-
-# print(1/(sum/Fs))
+    # if(temp < 400 and temp > 80):

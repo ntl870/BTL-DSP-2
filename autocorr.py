@@ -13,10 +13,12 @@ def Normalize(data, min, max):  # Chuẩn hóa data về 0,1
 
 
 def CalculateAC(data):
-    AC = np.zeros(int(len(data)))
-    for i in range(0, int(len(data))):
-        for k in range(i, int(len(data) -1)):
-            AC[i] += data[k]*data[k-i]
+    AC = []
+    temp = 0
+    for k in range(0, len(data) - 1):
+        temp += data[k]*data[k+1]
+        AC.append(temp)
+        temp = 0
     return AC
 
 
@@ -32,7 +34,7 @@ def CalculateAC(data):
 #     result = np.correlate(x, x, mode='full')
 #     return result[result.size/2:]
 
-Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
+Fs, data = read('./Resources/TinHieuMau/studio_male.wav')
 
 altdata = Normalize(data, min(data), max(data))
 # def autocorr2(x):
@@ -50,37 +52,38 @@ def autocorr(data):
     correlated = correlated[correlated.size //2:]
     return correlated
 
+
 AC = autocorr(data)
 
-mark = []
-
-for i in range(0,len(AC)):
-    if AC[i] > 0.018:
-        mark.append(i)
-
-# mark.append(len(AC))
-sum = 0
-pitch = []
-for i in range(0,len(mark)):
- if(i+1 < len(mark)):
-     if(mark[i+1] - mark[i] < 1000):
-        sum += (mark[i+1] - mark[i])/len(mark)
-        pitch.append(1/((mark[i + 1] - mark[i])/Fs))
+peaks, _ = find_peaks(AC, height=0.01)
 
 
+print(max(AC[peaks]))
 
 
-print(1/(sum/Fs))
+index = np.where(AC[peaks] == max(AC[peaks]))
+
+freq = Fs/(peaks[index[0] + 1] - peaks[index[0]])[0]
+
+print(freq)
+# freq = Fs/(AC[peaks][index + 1] - AC[peaks][index])
+# print(freq)
+# freq = []
+# for i in range(0,len(peaks) - 1):
+#     temp = peaks[i+1] - peaks[i]
+#     temp = Fs/temp
+#     if(temp < 400 and temp > 80):
+#         freq.append(temp)
 
 
-arrayX = []
-for i in range(0,len(pitch)):
-    arrayX.append(i)
-
-
-plt.subplot(2,1,1)
-plt.plot(AC)
-
-plt.subplot(2,1,2)
-plt.stem(pitch)
+plt.stem(peaks ,AC[peaks])
+plt.plot(AC,color='r')
 plt.show()
+
+# plt.subplot(2,1,2)
+# plt.plot(data)
+# plt.show()
+
+# plt.subplot(2,1,2)
+# plt.stem(pitch)
+# plt.show()
