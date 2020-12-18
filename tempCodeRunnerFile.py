@@ -1,1 +1,1 @@
-    # if(temp < 400 and temp > 80):
+freq = Fs/freq[0]
