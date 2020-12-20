@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 from scipy.io.wavfile import read
 from scipy.signal import find_peaks
 
@@ -33,7 +34,7 @@ def CalculateAC(data):
 #     result = np.correlate(x, x, mode='full')
 #     return result[result.size/2:]
 
-Fs, data = read('./Resources/TinHieuMau/studio_male.wav')
+Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
 
 altdata = Normalize(data, min(data), max(data))
 # def autocorr2(x):
@@ -47,63 +48,69 @@ def autocorr(data):
     y = data - np.mean(data)
     norm = np.sum(y ** 2)
     correlated = np.correlate(y, y, mode='same')/norm
-    correlated = correlated[correlated.size // 2:]
+    # correlated = correlated[correlated.size // 2:]
     return correlated
 
 
 AC = autocorr(data)
 
 
-# def Framing(Fs, data): # Hàm tính STE
-#     dur = len(data) / Fs  # Độ dài của tín hiệu âm thanh
-#     t = np.arange(0, dur, 0.02)  # Chia khoảng 0.02s bằng hàm arange của numpy
-#     # Tạo mảng E toàn 0 với độ dài của t với hàm zeros của numpy với kiểu dữ liệu là float64
-#     n1 = 0  # Biến n1 phụ để chạy qua mỗi khung
-#     res = []
-#     max_i = 0
-#     # Xác định tương đối 1 khoảng chia gặp bao nhiêu thơi gian lấy mẫu ( = 0.02/T)
-#     x = int(0.02*Fs)  # x là độ dài 1 khung
-#     for n in range(len(data)):  # Cho biến n chạy hết qua E
-#         while ((n*x + n1) < len(data)):  # Đảm bảo vẫn ở trong khoảng của data
-#             if(data[n*x + n1] > data[max_i]):
-#                 max_i = n*x + n1
-#             n1 += 1  # Tăng biến n1 lên 1 đơn vị
-#             if (n1 == x):   # Nếu n1 bằng x thì đang duyệt đến vị trí cuối khung
-#                 n1 = 0  # Đưa n1 = 0 để đến khung tiếp theo
-#                 break   # break để dừng
-#         res.append(max_i)
-#     return res    # Trả lại E cho hàm
-
-# print(Framing(Fs,AC))
-def getMax(arr,a,b):
+def getMax(arr, a, b):
     max_index = a
-    for i in range(a,b + 1):
+    for i in range(a, b + 1):
         if(arr[max_index] < arr[i]):
             max_index = i
     return max_index
 
 def Framing(Fs, data):
-    num_frames = Fs*0.01
+    num_frames = int(Fs*0.01)
     res = []
     max_i = 0
     x = 0
     while(x < len(data) - num_frames):
-        res.append(getMax(data,int(x),int(num_frames + x)))
+        res.append(getMax(data, int(x), int(num_frames + x)))
         x = x + num_frames
     return res
 
 
-frames = Framing(Fs,AC)
-freq = []
-for i in range(0,len(frames) - 1):
+frames = Framing(Fs, AC)
+plotfreq = np.zeros(len(frames)-1)
+for i in range(0, len(frames) - 1):
     temp = frames[i+1] - frames[i]
-    if(temp != 0):
-        temp = Fs/temp
-        if(temp < 400 and temp > 80):
-            freq.append(temp)
+    if(temp >= Fs/400 and temp <= Fs/80):
+        plotfreq[i] = (Fs/temp)
+    else:
+        plotfreq[i] = np.nan
 
-print(np.mean(freq))
-# peaks, _ = find_peaks(AC, height=0.01)
+
+
+
+
+arrayFreq = []
+for i in range(0, len(plotfreq)):
+    arrayFreq.append(int(i*Fs*0.01))
+
+
+
+
+plotfreq = scipy.signal.medfilt(plotfreq,5)
+
+
+print(np.nanmean(plotfreq))
+
+
+plt.subplot(3, 1, 1)
+plt.plot(AC, color='r')
+
+plt.subplot(3, 1, 2)
+plt.plot(arrayFreq,plotfreq, '.')
+
+plt.subplot(3, 1, 3)
+plt.plot(data)
+
+plt.show()
+
+# peaks, _ = find_peaks(freq, rel_height=0.01)
 
 # index = np.where(AC[peaks] == max(AC[peaks]))
 
@@ -118,7 +125,3 @@ print(np.mean(freq))
 
 
 # print(np.mean(freq))
-
-plt.stem(frames,AC[frames])
-plt.plot(AC, color='r')
-plt.show()

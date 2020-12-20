@@ -1,1 +1,2 @@
-freq = Fs/freq[0]
+
+def Framing(Fs, data):
