@@ -1,0 +1,28 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy
+from scipy.io.wavfile import read
+from scipy.signal import find_peaks
+from scipy.signal import medfilt
+from scipy.fftpack import fft
+import math
+
+Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
+
+D = [1,2,3,4]
+temp = 0
+
+x = np.correlate(D,D,mode='same')
+print(x)
+# for i in range(len(data)):
+#     for k in range(len(data) - 1):
+#         temp += abs(data[k] - data[k - i])
+#     D.append(temp)
+
+
+plt.subplot(2,1,1)
+plt.plot(x)
+
+plt.subplot(2,1,2)
+plt.plot(data)
+plt.show()

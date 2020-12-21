@@ -1,2 +1,1 @@
-
-def Framing(Fs, data):
+correlated = correlated[correlated.size // 2:]
