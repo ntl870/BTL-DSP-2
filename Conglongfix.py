@@ -46,10 +46,6 @@ def AltData(threshold):
             for j in range(480):
                 SplitData[i]= [0,0]
 
-def mean(listF):
-    listF.pop(0)
-    listF.pop(len(listF)-1)
-    return np.mean(listF)
 
 def correlate(arra,arrb):
     cor = []
@@ -81,7 +77,7 @@ def AMDFunction():
         else:
             amdf = AMDF(SplitData[n],SplitData[n])
             peaks, _ = find_peaks(amdf, height=0.0)
-            # Selection sort mảng peaks theo chiều giảm dần của correlated[peaks]
+            # Selection sort mảng peaks theo chiều tawng dần của amdf[peaks]
             for i in range(len(peaks)): 
                 min_idx = i 
                 for j in range(i+1, len(peaks)): 
@@ -130,17 +126,12 @@ SplitData = []
 CalculateMA_SplitFrame(Fs,data)
 
 MA = Normalize(MA, min(MA), max(MA))
-
 AltData(0.1)
 
 
 ListFreq_autocorr = autocorr()
 ListFreq_amdf= AMDFunction()
-print(ListFreq_autocorr)
-# F0_autocorr = mean(ListFreq_autocorr)
 
-# print("F0 xác định theo hàm tự tương quan= ",F0_autocorr)
-# print("F0 xác định theo hàm AMDF = ",mean(ListFreq_amdf))
 
 
 plt.subplot(4, 1, 1)
