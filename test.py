@@ -107,6 +107,16 @@ def SlicingArray(data,x):
 sliced = SlicingArray(data,edge)
 
 # splited_data = np.array_split(altdata, int(len(data)/(Fs*0.03)))
+def correlate(arra, arrb):
+    cor = []
+    sum = 0
+    for i in range(len(arra)):
+        position = abs((round(len(arra)-1)/2)-i)
+        for j in range(len(arra) - position):
+            sum += arra[j] * arrb[j+position]
+        cor.append(sum)
+        sum = 0
+    return cor
 
 
 def autocorr(data):
@@ -115,7 +125,8 @@ def autocorr(data):
     for i in range(0,len(altdata)):
         y = data - np.mean(data)
         norm = np.sum(y ** 2)
-        correlated = np.correlate(y, y, mode='same')/norm
+        # correlated = np.correlate(y, y, mode='same')/norm
+        correlated = correlate(y,y)/norm
         res.append(correlated)
     return res
 
