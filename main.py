@@ -123,6 +123,29 @@ def FFT(data):
     res = res[:res.size//2]
     return res
 
+def Calculate_FFT_Hamming():
+    F0_FFT_Hamming = [0]
+    for n in range(len(MA) -1):
+        if (len(SplitData[n]) ==2):
+            F0_FFT_Hamming.append(None)
+        else:
+            hamming = np.hamming(480)
+            FFTHamming = np.convolve(hamming,SplitData[n])
+            FFTHamming = fft(FFTHamming, n=16384)
+            FFTHamming = FFTHamming[:FFTHamming.size//2]
+            FFTHamming = Normalize(FFTHamming,min(FFTHamming),max(FFTHamming))
+            peaks, _ = find_peaks(FFTHamming,height=0)
+            positionMax = 1
+            MAX = 0
+            for i in range(len(peaks)):
+                if (peaks[i] >= Fs/350 and peaks[i]<= Fs/70):
+                    if (FFTHamming[peaks[i]] > MAX):
+                        MAX = FFTHamming[peaks[i]]
+                        positionMax = peaks[i] 
+            F0_FFT_Hamming.append(positionMax)     
+    F0_FFT_Hamming.append(0)
+    return F0_FFT_Hamming
+
 
 def CalculateFFT():
     F0_FFT = [0]
@@ -180,6 +203,10 @@ ListFreq_FFT = medfilt(ListFreq_FFT, 9)
 ListFreq_FFT = np.insert(ListFreq_FFT, 0, 0)
 print(Average(ListFreq_FFT))
 
+ListFreq_FFT_Hamming = Calculate_FFT_Hamming()
+ListFreq_FFT_Hamming = medfilt(ListFreq_FFT_Hamming, 9)
+ListFreq_FFT_Hamming = np.insert(ListFreq_FFT_Hamming, 0, 0)
+print(Average(ListFreq_FFT_Hamming))
 
 plt.subplot(4, 1, 1)
 plt.plot(ListFreq_autocorr, '.')
@@ -191,6 +218,6 @@ plt.subplot(4, 1, 3)
 plt.plot(ListFreq_FFT, '.')
 
 plt.subplot(4, 1, 4)
-plt.plot(data)
+plt.plot(ListFreq_FFT_Hamming,'.')
 
 plt.show()
