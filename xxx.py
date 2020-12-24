@@ -86,10 +86,10 @@ def AMDFunction():
             peaks, _ = find_peaks(amdf, threshold=-1)
             positionmax = 1
             for i in range(2, len(peaks)-1):
-                if(peaks[i] >= Fs/350 and peaks[i] <= Fs/75):
+                if(peaks[i] >= Fs/400 and peaks[i] <= Fs/80):
                     if amdf[peaks[i]] > amdf[peaks[positionmax]]:
                         positionmax = i
-            F0_amdf.append(Fs/peaks[positionmax])
+            F0_amdf.append(peaks[positionmax])
     F0_amdf.append(0)
     return F0_amdf
 
@@ -111,7 +111,7 @@ def autocorr():
                 peaks[i], peaks[max_idx] = peaks[max_idx], peaks[i]
             # Kiểm tra điều kiện các peak để xác định tần số chính xác
             for i in range(1, len(peaks)):
-                if(abs(peaks[i]-peaks[0]) >= Fs/350 and abs(peaks[i]-peaks[0]) <= Fs/75):
+                if(abs(peaks[i]-peaks[0]) >= Fs/400 and abs(peaks[i]-peaks[0]) <= Fs/80):
                     F0_autocorr.append(Fs/abs(peaks[i]-peaks[0]))
                     break
     F0_autocorr.append(0)
@@ -154,7 +154,7 @@ def Average(freq):
 # ------------------------------------------MAIN---------------------------------------
 
 
-Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
+Fs, data = read('./Resources/TinHieuMau/lab_female.wav')
 
 MA = []
 SplitData = []
