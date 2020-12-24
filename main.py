@@ -158,13 +158,6 @@ def FFT(data):      # Đầu vào là data
     res = res[:res.size//2]
     return res  # Trả về mảng giá trị res
 
-def FFT_Hamming(data):      # Đầu vào là data
-    # Dùng hàm fft của scipy để tính với n = 16384 = 2^14
-    res = fft(data, n=16384)
-    # Vì fft sinh ra hàm chẵn nên ta lấy nửa đầu để tính toán
-    res = res[:res.size//2]
-    return res  # Trả về mảng giá trị res
-
 # ------------------------------------------------
 
 # Hàm tính FFT với từng khung
@@ -195,6 +188,8 @@ def CalculateFFT():
 # ------------------------------------------------
 
 # Hàm tính FFT + Hamming với từng khung
+
+
 def Calculate_FFT_Hamming():
     # Tạo mảng chứa giá trị F0 của khung với 1 giá trị là 0 để cân chỉnh đồ thị
     F0_FFT_Hamming = [0]
@@ -207,7 +202,8 @@ def Calculate_FFT_Hamming():
             hamming = np.hamming(int(Fs*0.03))
             # Nhân 2 vector hamming và Splitdata[n]
             FFTHamming = np.convolve(hamming, SplitData[n])
-            FFTHamming = FFT_Hamming(FFTHamming)  # Tính toán FFT của FFTHamming
+            # Tính toán FFT của FFTHamming
+            FFTHamming = FFT(FFTHamming)
             FFTHamming = Normalize(FFTHamming, min(FFTHamming), max(
                 FFTHamming))  # Chuẩn hóa FFTHamming về 0,1
             # Dùng findpeaks tìm các cực đại lớn hơn 0
@@ -222,88 +218,109 @@ def Calculate_FFT_Hamming():
                         MAX = FFTHamming[peaks[i]]
                         positionMax = peaks[i]
                     # ----------------
-            F0_FFT_Hamming.append(positionMax)  # Sau khi tìm ra vị trí max đưa vào mảng chứa F0
+            # Sau khi tìm ra vị trí max đưa vào mảng chứa F0
+            F0_FFT_Hamming.append(positionMax)
     F0_FFT_Hamming.append(0)    # Đưa 0 vào cuối mảng để cân chỉnh đồ thị
-    return F0_FFT_Hamming # Trả về mảng chưa F0
-#------------------------------------------------------------------
+    return F0_FFT_Hamming  # Trả về mảng chưa F0
+# ------------------------------------------------------------------
 
 # Hàm tính trung bình F0
+
+
 def AverageF0(freq):  # Đầu vào mảng freq
-    count = 0 # Biến đếm phần tử count
-    sum = 0 # Biến sum chứa tổng
+    count = 0  # Biến đếm phần tử count
+    sum = 0  # Biến sum chứa tổng
     for i in range(len(freq)):  # Duyệt qua mảng F0
         if (freq[i] != None and freq[i] != 0):  # Nếu giá trị tần số khác None và 0 thì hợp lệ
-            sum += freq[i]  # Tính tổng  
-            count += 1 # Tăng số lần tính lên 1
-    return sum/count # Trả về giá trị trung bình là thương sum và count
+            sum += freq[i]  # Tính tổng
+            count += 1  # Tăng số lần tính lên 1
+    return sum/count  # Trả về giá trị trung bình là thương sum và count
 
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 
 
 # ------------------------------------------MAIN---------------------------------------
 
 
-Fs, data = read('./Resources/TinHieuMau/lab_male.wav') # Đọc tính hiệu đầu vào
+Fs, data = read('./Resources/TinHieuMau/lab_male.wav')  # Đọc tính hiệu đầu vào
 
 # Block code sau đây để phân biện khoảng lặng tiếng nói bằng phương pháp MA với ngưỡng đã khảo sát là 0.1
-MA = [] # Tạo mảng MA rỗng
-SplitData = []  # Mảng Splitdata để chưa từng khung 
-CalculateMA_SplitFrame(Fs, data)    # Cắt data thành nhiều khung lưu vào mảng 2 chiều
-MA = Normalize(MA, min(MA), max(MA)) # Chuẩn hóa MA về 0,1
+MA = []  # Tạo mảng MA rỗng
+SplitData = []  # Mảng Splitdata để chưa từng khung
+# Cắt data thành nhiều khung lưu vào mảng 2 chiều
+CalculateMA_SplitFrame(Fs, data)
+MA = Normalize(MA, min(MA), max(MA))  # Chuẩn hóa MA về 0,1
 UnVoicedToZero(0.1)    # Đưa những khoảng lặng về 0 với ngưỡng 0.1
-#------------------------------------
+# ------------------------------------
 
 # Tính toán trả về list F0 sử dụng hàm tự tương quan
-ListFreq_autocorr = autocorr() # Gán giá trị của hàm tự tương quan vào mảng
-ListFreq_autocorr = medfilt(ListFreq_autocorr, 21)  # Lọc trung vị với độ dài là 21
-ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)  # Đưa vào đầu giá trị 0 để cân đồ thị
-print("Tan so co ban trung binh cua TTQ: ", AverageF0(ListFreq_autocorr)) # In ra giá trị trung bình của F0
-#-----------------------------------------
+ListFreq_autocorr = autocorr()  # Gán giá trị của hàm tự tương quan vào mảng
+# Lọc trung vị với độ dài là 21
+ListFreq_autocorr = medfilt(ListFreq_autocorr, 21)
+# Đưa vào đầu giá trị 0 để cân đồ thị
+ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)
+print("Tan so co ban trung binh cua TTQ: ", AverageF0(
+    ListFreq_autocorr))  # In ra giá trị trung bình của F0
+# -----------------------------------------
 
 
 # Tính toán trả về list F0 sử dụng AMDF
 ListFreq_amdf = AMDFunction()    # Gán giá trị của hàm AMDF vào mảng
-ListFreq_amdf = medfilt(ListFreq_amdf, 21) # Lọc trung vị với độ dài là 21
-ListFreq_amdf = np.insert(ListFreq_amdf, 0, 0) # Đưa vào đầu giá trị 0 để cân đồ thị
-print("Tan so co ban trung binh cua AMDF: ", AverageF0(ListFreq_amdf)) # In ra giá trị trung bình của F0
-#-----------------------------------------
+ListFreq_amdf = medfilt(ListFreq_amdf, 21)  # Lọc trung vị với độ dài là 21
+# Đưa vào đầu giá trị 0 để cân đồ thị
+ListFreq_amdf = np.insert(ListFreq_amdf, 0, 0)
+print("Tan so co ban trung binh cua AMDF: ", AverageF0(
+    ListFreq_amdf))  # In ra giá trị trung bình của F0
+# -----------------------------------------
 
 # Tính toán trả về list F0 sử dụng FFT
-ListFreq_FFT = CalculateFFT() # Gán giá trị của FFT vào mảng
-ListFreq_FFT = medfilt(ListFreq_FFT, 21)  # Lọc trung vị với độ dài là 21
-ListFreq_FFT = np.insert(ListFreq_FFT, 0, 0) # Đưa vào đầu giá trị 0 để cân đồ thị
-print("Tan so co ban trung binh cua FFT: ", AverageF0(ListFreq_FFT)) # In ra giá trị trung bình của F0
-#-----------------------------------------
+ListFreq_FFT = CalculateFFT()  # Gán giá trị của FFT vào mảng
+# ListFreq_FFT = medfilt(ListFreq_FFT, 21)  # Lọc trung vị với độ dài là 21
+# Đưa vào đầu giá trị 0 để cân đồ thị
+ListFreq_FFT = np.insert(ListFreq_FFT, 0, 0)
+print("Tan so co ban trung binh cua FFT: ", AverageF0(
+    ListFreq_FFT))  # In ra giá trị trung bình của F0
+# -----------------------------------------
 
 # Tính toán trả về list F0 sử dụng FFT + Hamming
-ListFreq_FFT_Hamming = Calculate_FFT_Hamming() # Gán giá trị của FFT+Hamming vào mảng
-ListFreq_FFT_Hamming = medfilt(ListFreq_FFT_Hamming, 21) # Lọc trung vị với độ dài là 21
-ListFreq_FFT_Hamming = np.insert(ListFreq_FFT_Hamming, 0, 0) # Đưa vào đầu giá trị 0 để cân đồ thị
-print("Tan so co ban trung binh cua FFT + Hamming: ",AverageF0(ListFreq_FFT_Hamming))  # In ra giá trị trung bình của F0
-#-----------------------------------------
+# Gán giá trị của FFT+Hamming vào mảng
+ListFreq_FFT_Hamming = Calculate_FFT_Hamming()
+# Lọc trung vị với độ dài là 21
+# ListFreq_FFT_Hamming = medfilt(ListFreq_FFT_Hamming, 9)
+# Đưa vào đầu giá trị 0 để cân đồ thị
+ListFreq_FFT_Hamming = np.insert(ListFreq_FFT_Hamming, 0, 0)
+print("Tan so co ban trung binh cua FFT + Hamming: ",
+      AverageF0(ListFreq_FFT_Hamming))  # In ra giá trị trung bình của F0
+# -----------------------------------------
 
 
 # In ra đồ thị
 plt.subplot(5, 1, 1)
 plt.title("Studio_male")
 plt.plot(ListFreq_autocorr, '.')
+plt.legend(['Autocorrelation'])
 plt.ylabel("Frequencies")
 
 plt.subplot(5, 1, 2)
 plt.plot(ListFreq_amdf, '.')
+plt.legend(['AMDF'])
 plt.ylabel("Frequencies")
 
 plt.subplot(5, 1, 3)
 plt.plot(ListFreq_FFT, '.')
+plt.legend(['FFT'])
 plt.ylabel("Frequencies")
 
 plt.subplot(5, 1, 4)
 plt.plot(ListFreq_FFT_Hamming, '.')
+plt.legend(['FFT + Hamming'])
 plt.ylabel("Frequencies")
 
 plt.subplot(5, 1, 5)
 plt.plot(data)
+plt.legend(['Data'])
 plt.xlabel("Samples")
 
+
 plt.show()
-#-----------------
+# -----------------
