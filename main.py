@@ -194,10 +194,10 @@ MA = Normalize(MA, min(MA), max(MA))
 AltData(0.1)
 
 
-# ListFreq_autocorr = autocorr()
-# ListFreq_autocorr = medfilt(ListFreq_autocorr, 21)
-# ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)
-# print(Average(ListFreq_autocorr))
+ListFreq_autocorr = autocorr()
+ListFreq_autocorr = medfilt(ListFreq_autocorr, 21)
+ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)
+print(Average(ListFreq_autocorr))
 
 ListFreq_amdf = AMDFunction()
 ListFreq_amdf = medfilt(ListFreq_amdf, 21)
