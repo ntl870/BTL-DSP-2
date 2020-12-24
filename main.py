@@ -73,7 +73,6 @@ def AMDF(arra, arrb):
     cor = cor[len(cor)//2:]
     return cor
 
-
 def AMDFunction():
     F0_amdf = [0]
     for n in range(len(MA)-1):
@@ -83,13 +82,21 @@ def AMDFunction():
             amdf = AMDF(SplitData[n], SplitData[n])
             for i in range(len(amdf)):
                 amdf[i] = -amdf[i]
-            peaks, _ = find_peaks(amdf, threshold=-1)
-            positionmax = 1
-            for i in range(2, len(peaks)-1):
-                if(peaks[i] >= Fs/350 and peaks[i] <= Fs/75):
-                    if amdf[peaks[i]] > amdf[peaks[positionmax]]:
-                        positionmax = i
-            F0_amdf.append(Fs/peaks[positionmax])
+            amdf = Normalize(amdf,min(amdf),max(amdf))
+            peaks, _ = find_peaks(amdf, height=0.3)
+
+            # Selection sort mảng peaks theo chiều tawng dần của amdf[peaks]
+            for i in range(len(peaks)):
+                min_idx = i
+                for j in range(i+1, len(peaks)):
+                    if amdf[peaks[min_idx]] < amdf[peaks[j]]:
+                        min_idx = j
+                peaks[i], peaks[min_idx] = peaks[min_idx], peaks[i]
+            # Kiểm tra điều kiện các peak để xác định tần số chính xác
+            for i in range(1, len(peaks)):
+                if(abs(peaks[i]-peaks[0]) >= Fs/350 and abs(peaks[i]-peaks[0]) <= Fs/75):
+                    F0_amdf.append(Fs/abs(peaks[i]-peaks[0]))
+                    break
     F0_amdf.append(0)
     return F0_amdf
 
@@ -177,7 +184,7 @@ def Average(freq):
 # ------------------------------------------MAIN---------------------------------------
 
 
-Fs, data = read('./Resources/TinHieuMau/lab_male.wav')
+Fs, data = read('./Resources/TinHieuMau/studio_male.wav')
 
 MA = []
 SplitData = []
@@ -187,37 +194,48 @@ MA = Normalize(MA, min(MA), max(MA))
 AltData(0.1)
 
 
-ListFreq_autocorr = autocorr()
-ListFreq_autocorr = medfilt(ListFreq_autocorr, 9)
-ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)
-print(Average(ListFreq_autocorr))
+# ListFreq_autocorr = autocorr()
+# ListFreq_autocorr = medfilt(ListFreq_autocorr, 21)
+# ListFreq_autocorr = np.insert(ListFreq_autocorr, 0, 0)
+# print(Average(ListFreq_autocorr))
 
 ListFreq_amdf = AMDFunction()
-ListFreq_amdf = medfilt(ListFreq_amdf, 9)
+ListFreq_amdf = medfilt(ListFreq_amdf, 21)
 ListFreq_amdf = np.insert(ListFreq_amdf, 0, 0)
 print(Average(ListFreq_amdf))
 
 
 ListFreq_FFT = CalculateFFT()
-ListFreq_FFT = medfilt(ListFreq_FFT, 9)
+ListFreq_FFT = medfilt(ListFreq_FFT, 21)
 ListFreq_FFT = np.insert(ListFreq_FFT, 0, 0)
 print(Average(ListFreq_FFT))
 
 ListFreq_FFT_Hamming = Calculate_FFT_Hamming()
-ListFreq_FFT_Hamming = medfilt(ListFreq_FFT_Hamming, 9)
+ListFreq_FFT_Hamming = medfilt(ListFreq_FFT_Hamming, 21)
 ListFreq_FFT_Hamming = np.insert(ListFreq_FFT_Hamming, 0, 0)
 print(Average(ListFreq_FFT_Hamming))
 
-plt.subplot(4, 1, 1)
-plt.plot(ListFreq_autocorr, '.')
 
-plt.subplot(4, 1, 2)
+# plt.subplot(5, 1, 1)
+# plt.title("Lab_male")
+# plt.plot(ListFreq_autocorr, '.')
+# plt.ylabel("Frequencies")
+
+plt.subplot(5, 1, 2)
 plt.plot(ListFreq_amdf, '.')
+plt.ylabel("Frequencies")
 
-plt.subplot(4, 1, 3)
+plt.subplot(5, 1, 3)
 plt.plot(ListFreq_FFT, '.')
+plt.ylabel("Frequencies")
 
-plt.subplot(4, 1, 4)
+plt.subplot(5, 1, 4)
 plt.plot(ListFreq_FFT_Hamming,'.')
+plt.ylabel("Frequencies")
+
+plt.subplot(5,1,5)
+plt.plot(data)
+plt.xlabel("Samples")
+
 
 plt.show()
