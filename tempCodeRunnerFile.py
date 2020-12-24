@@ -1,1 +1,2 @@
-correlated = correlated[correlated.size // 2:]
+
+ACtest = abs(fft(ACtest))
