@@ -18,72 +18,117 @@ def CalculateMA_SplitFrame(Fs, data):  # Hàm tính MA
     dur = len(data) / Fs  # Độ dài của tín hiệu âm thanh
     t = np.arange(0, dur, 0.03)  # Chia khoảng 0.03s bằng hàm arange của numpy
     # Tạo mảng MA toàn 0 với độ dài của t với hàm zeros của numpy với kiểu dữ liệu là float64
-    MAtemp = 0
-    n1 = 0
+    MAtemp = 0  # tạo giá trị để lưu tạm MA
+    n1 = 0  # Khởi tạo giá trị ban đầu của chỉ số trong mảng
     x = int(0.03*Fs)  # x là độ dài 1 khung
-    Element = np.zeros(x)
+    Element = np.zeros(x)  # tạo mảng tạm để lưu data trong một khung
 
     # Xác định tương đối 1 khoảng chia gặp bao nhiêu thơi gian lấy mẫu ( = 0.03/T)
 
     for n in range(len(t)):  # Cho biến n chạy hết qua E
         while ((n*x + n1) < len(data)):  # Đảm bảo vẫn ở trong khoảng của data
             MAtemp += abs(data[n*x + n1])     # Công thức tính của MA
-            Element[n1] = data[n*x+n1]
+            Element[n1] = data[n*x+n1]  # Lưu data vào mảng tạm
             n1 += 1  # Tăng biến n1 lên 1 đơn vị
             if (n1 == x):  # Nếu n1 bằng x thì đang duyệt đến vị trí cuối khung
                 n1 = 0  # Đưa n1 = 0 để đến khung tiếp theo
+                # Hết khung, push mảng tạm vào mảng 2 chiều
+                # push Element vào mảng 2 chiều lưu các khung SplitData
                 SplitData.append(Element)
-                Element = np.zeros(x)
-                MA.append(MAtemp)
-                MAtemp = 0
+                Element = np.zeros(x)  # xóa giá trị trong Element
+                MA.append(MAtemp)  # push giá trị MAtemp vào mảng chứa MA
+                MAtemp = 0  # trả lại giá trị temp =0
                 break  # break để dừng
 
 # Lọc MA với ngưỡng cho trước, xác định các khoảng lặng và gán giá trị khoảng lặng với [0,0]
 
 
-def UnVoicedToZero(threshold):
-    for i in range(len(MA)):
-        if (MA[i] < 0.1):
-            for j in range(int(Fs*0.03)):
-                SplitData[i] = [0, 0]
+def UnVoicedToZero(threshold):  # Dùng phương pháp MA để phân biệt khoảng lặng và tiếng nói
+    for i in range(len(MA)):  # Duyệt tất cả phần tử trong MA
+        if (MA[i] < threshold):  # Nếu bé hơn ngưỡng thì gán 0 cho khoảng lặng
+            SplitData[i] = [0, 0]
 
 
+# Hàm nhân tương quan 2 ma trận
 def correlate(arra, arrb):
-    cor = []
-    sum = 0
-    for i in range(len(arra)):
+    cor = []  # tạo mảng tạm để lưu mảng kết quả
+    sum = 0  # khởi tạo giá trị lưu phần tử trong mảng
+    for i in range(len(arra)):  # Chạy tất cả các phần tử trong mảng A
+        # đánh dấu vị trí để băts đầu và kết thúc
         position = abs(round((len(arra)-1)/2)-i)
         for j in range(len(arra) - position):
             sum += arra[j] * arrb[j+position]
-        cor.append(sum)
-        sum = 0
-    cor = cor[len(cor)//2:]
-    return cor
+        cor.append(sum)  # push phần tử vào mảng tạm
+        sum = 0  # trả lại giá trị 0 cho biến tạm
+    cor = cor[len(cor)//2:]  # hàm đối xứng nên xứng, chỉ duyệt nửa sau
+    return cor  # trả về giá trị correlate
+
+# Hàm tự tương quan
+
+
+def autocorr():
+    # Tạo mảng F lưu các tần số cơ bản tại mỗi khung, tạo giá trị đầu bằng 0
+    F0_autocorr = [0]
+    for n in range(len(MA)-1):  # Số lượng phần tử trong MA bằng số lượng khung lưu trong SplitData
+        # Vì sau khi dùng hàm AltData với ngưỡng, các khung trong khoảng tiếng nói sẽ trở thành mảng 2 phần tử [0,0]
+        if (len(SplitData[n]) == 2):
+            F0_autocorr.append(None)  # Đặt giá trị NULL vào mảng
+        else:
+            # Mảng tạm để lưu giá trị phép bình phương correlate của khung SplitData[n]
+            correlated = correlate(SplitData[n], SplitData[n])
+            # xác định các peaks xuất hiện trong mảng correlated
+            peaks, _ = find_peaks(correlated, height=0.0)
+            # Selection sort mảng peaks theo chiều giảm dần của correlated[peaks]
+            for i in range(len(peaks)):
+                max_idx = i
+                for j in range(i+1, len(peaks)):
+                    if correlated[peaks[max_idx]] < correlated[peaks[j]]:
+                        max_idx = j
+                # Swap 2 giá trị với nhau
+                peaks[i], peaks[max_idx] = peaks[max_idx], peaks[i]
+            # Kiểm tra điều kiện các peak để xác định tần số chính xác
+            for i in range(1, len(peaks)):
+                # Điều kiện tần số tiếng nói trong khoảng 75 tới 350
+                if(abs(peaks[i]-peaks[0]) >= Fs/350 and abs(peaks[i]-peaks[0]) <= Fs/75):
+                    # Nếu thỏa mãn điều kiện thì push giá trị vào mảng F
+                    F0_autocorr.append(Fs/abs(peaks[i]-peaks[0]))
+                    break  # Ngắt vòng lặp vì đã xác định được F0 của khung
+    F0_autocorr.append(0)  # tạo giá trị cuối bằng 0
+    return F0_autocorr
+
+# Hàm tính AMDF của 2 mảng a và b
 
 
 def AMDF(arra, arrb):
-    cor = []
-    sum = 0
-    for i in range(len(arra)):
+    amdf = []  # tạo mảng tạm để lưu kết quả trả vể
+    sum = 0  # tạo phần tử tạm để lưu giá trị trong mảng
+    for i in range(len(arra)):  # Duyệt tất cả phần tử trong mảng, tính cor
         position = abs(round((len(arra)-1)/2)-i)
         for j in range(len(arra) - position):
             sum += abs(arra[j] - arrb[j+position])
-        cor.append(sum)
-        sum = 0
-    cor = cor[len(cor)//2:]
-    return cor
+        amdf.append(sum)  # push giá trị tính được vào mảng tạm
+        sum = 0  # trả lại giá trị 0 cho biến tạm
+    amdf = amdf[len(amdf)//2:]  # Hàm đối xứng nên chỉ lấy một nửa để xử lí
+    return amdf
+
+# Hàm tính AMDF của cả data
 
 
 def AMDFunction():
-    F0_amdf = [0]
+    F0_amdf = [0]  # tạo mảng 0 để lưu giá trị F0 của mỗi khung
+    # Duyệt các phần tử trong mảng SpitData, có len(MA) bằng số mẫu trong SplitData
     for n in range(len(MA)-1):
+        # Vì sau khi dùng hàm AltData với ngưỡng, các khung trong khoảng tiếng nói sẽ trở thành mảng 2 phần tử [0,0]
         if (len(SplitData[n]) == 2):
-            F0_amdf.append(None)
+            F0_amdf.append(None)  # Đặt giá trị NULL vào mảng
         else:
+            # Mảng tạm để lưu giá trị phép bình phương amdf của khung SplitData[n]
             amdf = AMDF(SplitData[n], SplitData[n])
-            for i in range(len(amdf)):
+            for i in range(len(amdf)):  # lật ngược mảng amdf để tìm peaks
                 amdf[i] = -amdf[i]
-            amdf = Normalize(amdf, min(amdf), max(amdf))
+            amdf = Normalize(amdf, min(amdf), max(amdf)
+                             )  # chuẩn hóa amdf về 0,1
+            # tìm peaks với ngưỡng là 0.3
             peaks, _ = find_peaks(amdf, height=0.3)
 
             # Selection sort mảng peaks theo chiều tawng dần của amdf[peaks]
@@ -95,35 +140,13 @@ def AMDFunction():
                 peaks[i], peaks[min_idx] = peaks[min_idx], peaks[i]
             # Kiểm tra điều kiện các peak để xác định tần số chính xác
             for i in range(1, len(peaks)):
+                # Điều kiện tần số tiếng nói trong khoảng 75 tới 350
                 if(abs(peaks[i]-peaks[0]) >= Fs/350 and abs(peaks[i]-peaks[0]) <= Fs/75):
+                    # Nếu thỏa mãn điều kiện thì push giá trị vào mảng F
                     F0_amdf.append(Fs/abs(peaks[i]-peaks[0]))
-                    break
-    F0_amdf.append(0)
-    return F0_amdf
-
-
-def autocorr():
-    F0_autocorr = [0]
-    for n in range(len(MA)-1):
-        if (len(SplitData[n]) == 2):
-            F0_autocorr.append(None)
-        else:
-            correlated = correlate(SplitData[n], SplitData[n])
-            peaks, _ = find_peaks(correlated, height=0.0)
-            # Selection sort mảng peaks theo chiều giảm dần của correlated[peaks]
-            for i in range(len(peaks)):
-                max_idx = i
-                for j in range(i+1, len(peaks)):
-                    if correlated[peaks[max_idx]] < correlated[peaks[j]]:
-                        max_idx = j
-                peaks[i], peaks[max_idx] = peaks[max_idx], peaks[i]
-            # Kiểm tra điều kiện các peak để xác định tần số chính xác
-            for i in range(1, len(peaks)):
-                if(abs(peaks[i]-peaks[0]) >= Fs/350 and abs(peaks[i]-peaks[0]) <= Fs/75):
-                    F0_autocorr.append(Fs/abs(peaks[i]-peaks[0]))
-                    break
-    F0_autocorr.append(0)
-    return F0_autocorr
+                    break  # Ngắt vòng lặp vì đã xác định được F0 của khung
+    F0_amdf.append(0)  # tạo giá trị cuối bằng 0
+    return F0_amdf  # trả về mảng các F0 của từng khung
 
 # Hàm tính FFT
 
