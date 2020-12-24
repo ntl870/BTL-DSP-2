@@ -1,3 +1,14 @@
+def AMDF(arra,arrb):
+    cor = []
+    sum =0
+    for i in range(len(arra)):
+        position =  abs(round((len(arra)-1)/2)-i)
+        for j in range(len(arra)- position):
+            sum+= abs(arra[j]- arrb[j+position])
+        cor.append(sum)
+        sum =0
+    return cor
+
 def AMDFunction():
     F0_amdf =[0]
     for n in range(len(MA)-1):
@@ -5,7 +16,7 @@ def AMDFunction():
             F0_amdf.append(None)
         else:
             amdf = AMDF(SplitData[n],SplitData[n])
-            amdf=amdf[int(len(amdf)/2): -1]
+            amdf=amdf[int(len(amdf)/2): ]
             for i in range(len(amdf)):
                 amdf[i] = -amdf[i]
             peaks, _ = find_peaks(amdf, threshold=-1)
